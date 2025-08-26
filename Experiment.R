@@ -1,3 +1,4 @@
+#install all the package have to use in the program
 install.packages ("quanteda")
 install.packages ("readtext")
 install.packages ("stringi")
@@ -15,6 +16,7 @@ install.packages("udpipe")
 install.packages("reshape2")
 install.packages("topicmodels")
 
+#library the package to ensure you can use the code 
 library(quanteda)
 library(readtext)
 library(stringi)
@@ -30,7 +32,8 @@ library(reshape2)
 library(topicmodels)
 library(tm)
 
-##
+#Step 1: clean the text and change them into tokens
+#clean the The Wizard of Oz
 TWOO <- texts(readtext("The Wizard of Oz.txt", encoding = "UTF-8"))
 twoo_clean <- tokens(TWOO, remove_punct = TRUE) %>% 
   tokens_tolower()
@@ -38,6 +41,7 @@ twoo_token_count <- as.character(twoo_clean)
 length (twoo_token_count)
 twoo_remove <- tokens_remove(twoo_clean, stopwords("english"))
 
+#clean The Secret Garden
 TSG <- texts(readtext("The secret garden.txt", encoding = "UTF-8"))
 tsg_clean <- tokens(TSG, remove_punct = TRUE) %>% 
   tokens_tolower()
@@ -45,6 +49,7 @@ tsg_token_count <- as.character(tsg_clean)
 length (tsg_token_count)
 tsg_remove <- tokens_remove(tsg_clean, stopwords("english"))
 
+#clean The Little Prince
 TLP <- texts(readtext("The little prince.txt", encoding = "UTF-8"))
 tlp_clean <- tokens(TLP, remove_punct = TRUE) %>% 
   tokens_tolower()
@@ -52,6 +57,7 @@ tlp_token_count <- as.character(tlp_clean)
 length (tlp_token_count)
 tlp_remove <- tokens_remove(tlp_clean, stopwords("english"))
 
+#clean the Pippi Longstocking
 PP <- texts(readtext("Pippi.txt", encoding = "UTF-8"))
 pp_clean <- tokens(PP, remove_punct = TRUE) %>% 
   tokens_tolower()
@@ -59,6 +65,7 @@ pp_token_count <- as.character(pp_clean)
 length (pp_token_count)
 pp_remove <-tokens_remove(pp_clean, stopwords("english"))
 
+#clean the Peter Pan
 PA <- texts(readtext("PETER AND WENDY.txt", encoding = "UTF-8"))
 pa_clean <- tokens(PA, remove_punct = TRUE) %>% 
   tokens_tolower()
@@ -66,13 +73,15 @@ pa_token_count <- as.character(pa_clean)
 length (pa_token_count)
 pa_remove <- tokens_remove(pa_clean, stopwords("english"))
 
+#clean Anne of Green Gables
 AN <- texts(readtext("Anne.txt", encoding = "UTF-8"))
 an_clean <- tokens(AN, remove_punct = TRUE) %>% 
   tokens_tolower()
 an_token_count <- as.character(an_clean)
 length (an_token_count)
 an_remove <- tokens_remove(an_clean, stopwords("english"))
-  
+
+#Step 2: cut them in to chunks
 twoo_chunk <- tokens_chunk(twoo_remove, size = 1000)
 tsg_chunk <- tokens_chunk(tsg_remove, size = 1000)
 tlp_chunk <- tokens_chunk(tlp_remove, size = 1000)
@@ -80,8 +89,7 @@ pp_chunk <- tokens_chunk(pp_remove, size = 1000)
 pa_chunk <- tokens_chunk(pa_remove, size = 1000)
 an_chunk <- tokens_chunk(an_remove, size = 1000)
 
-#记得根据chunks数量在Latex画个表格
-##
+#Step 3:use syuzhet to draw a Emotional Valence
 TWOO_syuzhet <- get_text_as_string("The Wizard of Oz.txt")
 twoo_sentences <- get_sentences(TWOO_syuzhet)
 twoo_sentiment <- get_sentiment(twoo_sentences, method = "syuzhet")
@@ -133,6 +141,8 @@ plot(sy_sent_cs, type = "l",
      ylab = "Emotional Valence", 
      main = "The Emotion Trajectory in Anne of Green Gables")
 
+#Step 4:conbine all the plots together to find the differences
+#this step is to make the visual charts clear
 all_books <- data.frame(
   time = c(seq_along(cumsum(twoo_sentiment)), 
            seq_along(cumsum(tsg_sentiment)),
@@ -170,6 +180,7 @@ ggplot(all_books, aes(x = time, y = sentiment, color = book)) +
                                 "Anne of Green Gables" = "#B87070")) +
   theme(legend.position = "bottom")
 
+#Step 5:seperate four books make them in the same chart
 books_upward <- data.frame(
   time_1 = c(
     1:length(cumsum(tsg_sentiment)),
@@ -211,6 +222,8 @@ ggplot(books_upward, aes(x = time_1, y = sentiment_1, color = book_1)) +
   )) +
   theme(legend.position = "bottom")
 
+#Step 6:combin the rest two books
+#these two steps depend on the result got from Step 4 
 books_upward <- data.frame(
   time_2 = c(
     seq_along(cumsum(twoo_sentiment)),
@@ -243,14 +256,15 @@ ggplot(books_upward, aes(x = time_2, y = sentiment_2, color = book_2)) +
   )) +
   theme(legend.position = "bottom")
 
-##
+#Step 7:prepare the dfm and dtm file
 twoo_dfm <- dfm(twoo_chunk)
 pa_dfm <- dfm(pa_chunk)
-
 twoo_dtm <- convert(twoo_dfm, to = "topicmodels")
 
+#set the seed
 set.seed(42)
 
+#Step 8:retrieve and output the visualization chart of the best number of topics
 find_optimal_k <- function(dtm, k_range = seq(10, 20, by = 1)) {
   logLik_scores <- numeric(length(k_range))
   for (i in seq_along(k_range)) {
@@ -313,19 +327,19 @@ find_optimal_k_data <- function(dtm, k_range = seq(10, 20, by = 1)) {
     logLik = logLik_scores)
 }
 
-# 获取两个数据集的结果
+# Obtain the results of the two datasets
 set.seed(42)
 twoo_results <- find_optimal_k_data(twoo_dtm)
 pa_results <- find_optimal_k_data(pa_dtm)
 
-# 添加数据集标识
+# add dataset identifiers
 twoo_results$dataset <- "twoo"
 pa_results$dataset <- "pa"
 
-# 合并数据
+# merging data
 combined_results <- rbind(twoo_results, pa_results)
 
-# 绘制合并图形
+# draw merged graphics
 ggplot(combined_results, aes(x = k, y = logLik, color = dataset, group = dataset)) +
   geom_line() +
   geom_point() +
@@ -337,12 +351,13 @@ ggplot(combined_results, aes(x = k, y = logLik, color = dataset, group = dataset
   theme_minimal() +
   theme(legend.position = "bottom")
 
+#output the optimal number of topics
 twoo_lda <- LDA(twoo_dtm, k = 20)
 terms(twoo_lda, 20)[,11]
 pa_lda <- LDA(pa_dtm, k = 20)
 terms(pa_lda, 20)[,17]
 
-##
+#Step 9:Calculate the cosine value of topic similarity
 twoo_topic11 <- exp(twoo_lda@beta[11, ])
 pa_topic17 <- exp(pa_lda@beta[17, ])     
 
@@ -358,7 +373,7 @@ cosine_similarity <- function(vec1, vec2) {
 similarity <- cosine_similarity(twoo_topic11_common, pa_topic17_common)
 print(paste("cosine similarity:", similarity))
 
-##
+#Step 10:Analyze the theme similarity of The Wizard of Oz within the group
 specified_conrad <- readtext("The Wizard of Oz.txt", encoding = "UTF-8")
 
 selected_children <- list.files(pattern = "Prince|Anne|Garden|Pippi", ignore.case = TRUE) 
